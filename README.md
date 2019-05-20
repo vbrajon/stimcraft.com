@@ -1,5 +1,5 @@
 # Stimcraft
-> Stimulate your Starcraft II performance
+> Stimulate your Starcraft II performances
 
 ## UI
 ------------------------
@@ -95,5 +95,7 @@ Ctrl-Shift-O - Observer Panel
 - https://starcraft2.com/en-us/news/22938943
 - https://comic.starcraft2.com/en-us/shadow-wars-part-1
 - https://eu.battle.net/forums/en/sc2/18518180/
+- https://www.download-free-fonts.com/details/90021/starcraft-normal
 - https://www.download-free-fonts.com/details/76365/eurostile-extended
 - https://www.download-free-fonts.com/details/79984/eurostile-bold-extended
+- https://codepen.io/xonic/pen/KWMaqe

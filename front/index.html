@@ -4,361 +4,74 @@
     <meta charset="utf-8" />
     <title>Stimcraft</title>
     <link href="/img/icon.png" rel="icon" />
-  </head>
-  <body>
     <style>
       @import url(/css/sc2-fonts.css);
-      body { margin: 0;color: white;background: #000518 center 0 no-repeat;font: 400 18px Blizzard; }
-      body > img { z-index: -1;position: fixed;top: 0;left: 0;max-height: 100vh; }
-      h1 { font: 600 60px Starcraft;text-align: center;text-shadow: 0 0 5px #05f; }
-
-      .player-1 { --player: 238, 0, 0; }
-      .player-2 { --player: 14, 52, 255; }
-      .ul { margin: 0 15%;padding-bottom: 8px;background: rgb(255,255,255,.1);border: 1px solid rgb(255,255,255,.3);border-radius: 4px;font: 400 18px/1.6 Eurostile;letter-spacing: -.06em;}
-      .ul .title { margin-bottom: -20px;font-weight: 600;text-align: center;text-transform: uppercase; }
-      .ul .player { position: relative;height: 120px;margin: 20px;padding: 20px;background: #111518; }
-      .ul .color { position: absolute;top: 0;left: 0;height: 100%;width: 8px;background: rgb(var(--player));border-radius: 4px; }
-      .ul .units, .ul .buildings, .ul .resources { display: flex; }
-      .ul .cell { position: relative;width: 42px;height: 42px;margin: 2px;background: rgb(var(--player), .1);border: 2px solid rgb(var(--player), .5);border-radius: 2px; }
-      .ul .cell:empty { background: #14181b;border-color: #14181b; }
-      .ul img.unit, .ul img.building { position: absolute;width: 100%; }
-      .ul .num { position: absolute;top: 20px;right: 0; }
-      .ul .mineral, .ul .gaz { width: 110px;padding: 4px;font-weight: 300; }
-      .ul .mineral { color: #00d6fa; }
-      .ul .gaz { color: #00ff00; }
-
-      [v-cloak] { display:none; }
-      .a .ul { opacity: .5; }
-      .z .ul { opacity: 0; }
-      .e img { filter: blur(30px); }
-    </style>
-    <main v-cloak>
-      <!-- <img src="/img/wcs.jpg" /> -->
-      <!-- <img src="/ui/obs-units-lost-panel.png" /> -->
-      <h1>Stimcraft</h1>
-
-      <div class="debug" style="z-index: 10000;position: fixed;top: 110px;left: 15%;">
-        {{ loop.duration() }} / {{ match && match.duration.duration() }}
-        <input type="range" min="0" :max="match && match.duration" v-model="loop" />
-      </div>
-      <div class="info">
-        <span>{{ new Date(match.date).relative() }}</span>
-        <span>{{ match.duration.duration() }}</span>
-        <span>{{ match.players.map(p => p.name).join(' vs ') }}</span>
-        <span>{{ match.game_matchup }}</span>
-        <span>{{ match.game_type }}</span>
-        <span>{{ match.map }}</span>
-        <span>{{ match.release[0] == 1 ? 'WoL' : match.release[0] == 2 ? 'HotS' : 'LotV' }}</span>
-        <span>{{ match.region }}/{{ match.realm }}/{{ match.release }}</span>
-        <a target="_blank" rel="noopener" :href="'http://ggtracker.com/matches/' + path.slice(4)" v-if="/gg-/.test(path)">on GGTracker</a>
-        <a target="_blank" rel="noopener" :href="'http://sc2replaystats.com/replay/' + path.slice(4)" v-if="/sr-/.test(path)">on SC2ReplayStats</a>
-        <a target="_blank" rel="noopener" :href="'http://spawningtool.com/' + path.slice(4)" v-if="/st-/.test(path)">on Spawningtool</a>
-      </div>
-      <div class="units-lost ul" v-if="match">
-        <div class="title">Units Lost</div>
-        <div class="player" :class="'player-' + p._id" v-for="p in match.players">
-          <div class="color"></div>
-          <div class="units">
-            <div class="cell" v-for="v, k in p.build.units.filter(u => u.unit.last().m_killerPlayerId && u.unit.last().s <= loop).group('type')">
-              <img class="unit" :src="'/units/' + k + '.jpg'" />
-              <div class="num">{{ v.length }}</div>
-            </div>
-            <div class="cell" v-for="i in 2"></div>
-          </div>
-          <div class="buildings">
-            <div class="cell" v-for="v, k in p.build.buildings.filter(u => u.unit.last().m_killerPlayerId && u.unit.last().s <= loop).group('type')">
-              <img class="building" :src="'/buildings/' + k + '.jpg'" />
-              <div class="num">{{ v.length }}</div>
-            </div>
-            <div class="cell" v-for="i in 2"></div>
-          </div>
-          <div class="resources">
-            <div class="mineral">{{ p.build.stats.filter(s => s.s <= loop).last().filter((v, k) => k.includes('MineralsLost')).values().sum() }}</div>
-            <div class="gaz">{{ p.build.stats.filter(s => s.s <= loop).last().filter((v, k) => k.includes('VespeneLost')).values().sum() }}</div>
-          </div>
-        </div>
-      </div>
-      <!-- <div class="match">
-        <div class="info">
-          <span>{{ new Date(match.date).relative() }}</span>
-          <span>~{{ match.duration.duration() }}</span>
-          <span>{{ match.date }}</span>
-          <span>{{ match.duration }}seconds</span>
-          <span>{{ match.game_format }}</span>
-          <span>{{ match.game_type }}</span>
-          <span>{{ match.map }}</span>
-          <span>{{ match.release[0] == 1 ? 'WoL' : match.release[0] == 2 ? 'HotS' : 'LotV' }}</span>
-          <span>{{ match.region }}/{{ match.realm }}/{{ match.release }}</span>
-          <a target="_blank" rel="noopener" :href="'http://ggtracker.com/matches/' + path.slice(4)" v-if="/gg-/.test(path)">on GGTracker</a>
-          <a target="_blank" rel="noopener" :href="'http://sc2replaystats.com/replay/' + path.slice(4)" v-if="/sr-/.test(path)">on SC2ReplayStats</a>
-          <a target="_blank" rel="noopener" :href="'http://spawningtool.com/' + path.slice(4)" v-if="/st-/.test(path)">on Spawningtool</a>
-        </div>
-        <div class="team" :class="'team-' + index" v-for="index in 2">
-          <div class="player" :style="'--color: ' + player.color" v-for="player in match.players" v-if="player._teamId === (index - 1)">
-            <span>
-              <svg><use :xlink:href="'#' + { P: 'protoss', T: 'terran', Z: 'zerg' }[player.race]" /></svg>
-            </span>
-            <span>{{ player.clan }}</span>
-            <span>{{ player.name }}</span>
-            <span>{{ player.winner ? 'winner' : 'loser' }}</span>
-            <div class="build">
-              <div v-for="item in player.build">
-                {{ item }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div> -->
-    </main>
-    <script type="module">
-      import Vue from 'https://unpkg.com/vue@2.6.10/dist/vue.esm.browser.js'
-      import raw from 'https://vbrajon.github.io/rawjs/raw.js'
-      Vue.config.productionTip = false
-      // Vue.config.devtools = false
-      Array.first = arr => arr[0]
-      Array.last = arr => arr.slice(-1)[0]
-      Number.duration = num => {
-        const s = ~~(num % 60)
-        const m = ~~(num / 60 % 60)
-        if (num < 3600) return [m, s].map(d => ('0' + d).slice(-2)).join(':')
-        const h = ~~(num / 3600 % 24)
-        if (num < 86400) return [h, m, s].map(d => ('0' + d).slice(-2)).join(':')
-        const d = ~~(num / 86400 % 30)
-        if (num < 2592000) return d + 'days ' + h + 'h'
-        const M = ~~(num / 2592000 % 12)
-        if (num < 31104000) return M + ' month'
-        const y = ~~(num / 31104000)
-        return y + ' year ' + M + ' month'
+      * { box-sizing: border-box; }
+      body { margin: 0;color: white;background: black;font: 400 18px Blizzard;letter-spacing: -0.04em; }
+      h1, h2, h3 { text-align: center; }
+      h1 { position: sticky;top: 20px;margin-top: 200px;font: 600 20px/1 Starcraft;text-shadow: -.06em .06em .06em #3F5D84; }
+      h1 span { position: relative; }
+      h1 :nth-child(1) { z-index: 1;top: .125em;right: -.22em;font-size: 1.6em;line-height: 0; }
+      h1 :nth-child(2) { z-index: 2;right: -.1em; }
+      h1 :nth-child(3) { z-index: 3; }
+      h1 :nth-child(4) { z-index: 4; }
+      h1 :nth-child(5) { z-index: 5;top: .125em;left: .062em;margin: -.062em;font-size: 1.6em;line-height: 0; }
+      h1 :nth-child(6) { z-index: 6; }
+      h1 :nth-child(7) { z-index: 7; }
+      h1 :nth-child(8) { z-index: 8; }
+      h1 :nth-child(9) { z-index: 9;left: -.02em; }
+      h2 { font: 600 30px/1 Starcraft;text-shadow: -.06em .06em .06em #3F5D84; }
+      h3 { font: 600 30px/1 Eurostile;text-transform: uppercase; }
+      h3, .scroll-down { position: absolute;bottom: 100px;width: 100%;opacity: 0; }
+      .scroll-down { display: flex;align-items: center;justify-content: center; }
+      /* IDEA: improve this with "n" chevron (transition for 1st and last), no position absolute, width/height in em */
+      .chevron { position: absolute;opacity: 0;margin: -6px;width: 56px;height: 16px;transform: scale3d(0.5, 0.5, 0.5); }
+      .chevron:before, .chevron:after { content: ' ';position: absolute;top: 0;height: 100%;width: 51%;background: #fff; }
+      .chevron:before { left: 0;transform: skew(0deg, 30deg); }
+      .chevron:after { right: 0;width: 50%;transform: skew(0deg, -30deg); }
+      .chevron { animation: move 2s ease-out infinite; }
+      .chevron:nth-of-type(1) { animation: move 2s ease-out .66s infinite; }
+      .chevron:nth-of-type(2) { animation: move 2s ease-out 1.33s infinite; }
+      @keyframes move {
+        25% { opacity: 1; }
+        33% { opacity: 1;transform: translateY(60px); }
+        67% { opacity: 1;transform: translateY(80px); }
+        100% { opacity: 0;transform: translateY(110px) scale3d(0.5, 0.5, 0.5); }
       }
-      String.duration = str => (+str).duration()
-      Date.relative = (d1, d2 = new Date()) => (~~((d2 - d1) / 1000)).duration() + ' ago'
-      raw()
-      raw(Object, 'keys')
-      raw(Object, 'values')
-      /* TMP */ window.raw = raw
-      /* TMP */ addEventListener('keydown', e => (document.body.className = e.key))
-
-      window.units = [
-        'scv',
-        'marine',
-        'marauder',
-        'reaper',
-        'ghost',
-        'hellion',
-        'siege-tank',
-        'thor',
-        'viking',
-        'medivac',
-        'raven',
-        'banshee',
-        'battlecruiser',
-        'hellbat',
-        'widow-mine',
-        'liberator',
-        'cyclone',
-        'probe',
-        'zealot',
-        'stalker',
-        'sentry',
-        'observer',
-        'immortal',
-        'warp-prism',
-        'colossus',
-        'phoenix',
-        'void-ray',
-        'high-templar',
-        'dark-templar',
-        'archon',
-        'carrier',
-        'mothership',
-        'mothership-core',
-        'oracle',
-        'tempest',
-        'adept',
-        'disruptor',
-        'drone',
-        'overlord',
-        'zergling',
-        'queen',
-        'hydralisk',
-        'baneling',
-        'overseer',
-        'roach',
-        'infestor',
-        'mutalisk',
-        'corruptor',
-        'nydus-worm',
-        'ultralisk',
-        'brood-lord',
-        'swarm-host',
-        'viper',
-        'ravager',
-        'lurker',
-      ]
-      window.buildings = [
-        'command-center',
-        'supply-depot',
-        'refinery',
-        'barracks',
-        'orbital-command',
-        'planetary-fortress',
-        'engineering-bay',
-        'bunker',
-        'missile-turret',
-        'sensor-tower',
-        'factory',
-        'ghost-academy',
-        'armory',
-        'starport',
-        'fusion-core',
-        'tech-lab',
-        'reactor',
-        'nexus',
-        'pylon',
-        'assimilator',
-        'gateway',
-        'forge',
-        'photon-cannon',
-        'warpgate',
-        'cybernetics-core',
-        'twilight-council',
-        'robotics-facility',
-        'stargate',
-        'templar-archives',
-        'dark-shrine',
-        'robotics-bay',
-        'fleet-beacon',
-        'evolution-chamber',
-        'hatchery',
-        'extractor',
-        'spawning-pool',
-        'spine-crawler',
-        'spire',
-        'roach-warren',
-        'infestation-pit',
-        'spore-crawler',
-        'hydralisk-den',
-        'baneling-nest',
-        'lair',
-        'nydus-network',
-        'hive',
-        'ultralisk-cavern',
-        'greater-spire',
-      ]
-      window.upgrades = [
-        'zerglingmovementspeed',
-        'glial-reconstitution',
-        'centrifical-hooks',
-        'zerg-missile-weapons-level1',
-        'zerg-missile-weapons-level2',
-        'zerg-missile-weapons-level3',
-        'warp-gate-research',
-        'charge',
-        'protoss-ground-weapons-level1',
-        'protoss-ground-weapons-level2',
-        'protoss-ground-weapons-level3',
-        'psi-storm-tech',
-      ]
-      window.vm = new Vue({
-        el: 'main',
-        data: { raw: null, loop: 0 },
-        computed: {
-          match() {
-            if (!this.raw) return
-            window.r = this.raw
-            window.h = r.header
-            window.d = r.details
-            window.i = r.initdata
-            window.g = r.gameevents
-            window.m = r.messageevents
-            window.t = r.trackerevents
-            m.map(e => (e.s = ~~(e._gameloop / 22.4), e._event = e._event.replace('NNet.Game.', '')))
-            t.map(e => (e.s = ~~(e._gameloop / 22.4), e._event = e._event.replace('NNet.Replay.Tracker.', '')))
-            const duration = Math.ceil(t.slice(-1)[0]._gameloop / 22.4)
-            const date = new Date((d.m_timeUTC - 116444735995904000) / 1e4 - duration)
-            const teams = d.m_playerList.group('m_teamId').values()
-            const game_options = i.m_syncLobbyState.m_gameDescription.m_gameOptions
-            const game_format = teams.map('length').join('v')
-            const game_matchup = teams.map(t => t.map('m_race').join('-').slice(0, 1)).join('v')
-            const game_type = ['Custom', 'Unranked', 'Ranked'][game_options.m_amm + game_options.m_competitive]
-            const u = t.filter('m_unitTagRecycle').group(e => ((e.id = e.m_unitTagRecycle + '_' + e.m_unitTagIndex), e.id))
-            const builds = t.reduce((acc, e) => {
-              const player = e.m_playerId || e.m_controlPlayerId
-              if (!player) return acc
-              if (!acc[player]) acc[player] = { units: [], buildings: [], upgrades: [], stats: [] }
-              if (e._event === 'SPlayerStatsEvent') acc[player].stats.push({ ...e.m_stats, s: e.s })
-              if (e.m_unitTypeName || e.m_upgradeTypeName) {
-                const unit = u[e.id]
-                const type = (e.m_unitTypeName || e.m_upgradeTypeName).join('-')
-                if (units.includes(type)) acc[player].units.push({ type, unit })
-                if (buildings.includes(type)) acc[player].buildings.push({ type, unit })
-                if (upgrades.includes(type)) acc[player].upgrades.push({ type, s: e.s })
-              }
-              return acc
-            }, {})
-            const players = d.m_playerList.map(p => {
-              const slot = i.m_syncLobbyState.m_lobbyState.m_slots.find(s => s.m_workingSetSlotId === p.m_workingSetSlotId)
-              const data = i.m_syncLobbyState.m_userInitialData[slot.m_userId]
-              const _id = t.find(e => e.m_userId === slot.m_userId && e._event === 'SPlayerSetupEvent').m_playerId
-              const color = '#' + ['m_r', 'm_g', 'm_b'].map(k => p.m_color[k].toString(16).padStart(2, '0')).join('')
-              return {
-                _id,
-                build: builds[_id],
-                clan: data.m_clanTag,
-                color: color,
-                name: data.m_name,
-                race_pref: ['T', 'Z', 'P'][slot.m_racePref.m_race],
-                race: p.m_race[0],
-                winner: p.m_result === 1,
-              }
-            })
-
-            return {
-              date,
-              duration,
-              game_format,
-              game_matchup,
-              game_type,
-              map: d.m_title,
-              players,
-              realm: d.m_playerList[0].m_toon.m_realm,
-              region: d.m_playerList[0].m_toon.m_region,
-              release: ['m_major', 'm_minor', 'm_revision', 'm_build'].map(k => h.m_version[k]).join('.'),
-            }
-          },
-        },
-        mounted() {
-          // WCS 2018 - Stats vs Serral Game1 - st-41508
-          fetch('https://stimcraft.v-brajon.now.sh/api/st-41508')
-            .then(r => r.json())
-            .then(json => (this.raw = Object.freeze(json)))
-        },
+      body { height: 7000px;overflow-x: hidden; }
+      img { z-index: -1;position: sticky;top: -1100px;margin-top: -450px;width: calc(100% + 25px); }
+      ::-webkit-scrollbar { width: 25px;background: url(/img/scroll.png);background-position-y: -1545px;background-position-x: right; }
+      ::-webkit-scrollbar-thumb { background: rgb(255, 255, 255, .25); }
+    </style>
+  </head>
+  <body>
+    <h1><span>S</span><span>t</span><span>i</span><span>m</span><span>c</span><span>r</span><span>a</span><span>f</span><span>t</span></h1>
+    <h2>Stimulate your Starcraft II performances</h2>
+    <h3>The ultimate<br>Replay strategy analyzer</h3>
+    <div class="scroll-down">
+      <div class="chevron"></div>
+      <div class="chevron"></div>
+      <div class="chevron"></div>
+      <!-- <div class="chevron"></div> -->
+    </div>
+    <img src="/img/bg.jpg" />
+    <script>
+      scroll_fn = () => {
+        if (scrollY / innerHeight > 1) return
+        const p = 1 - (scrollY / innerHeight)
+        document.querySelector('img').style['filter'] = 'blur(' + (20 * Math.pow(p, 10)) + 'px)'
+        document.querySelector('h1').style['font-size'] = Math.max(20, 100 * Math.pow(p, 4)) + 'px'
+        document.querySelector('h2').style.opacity = 1 - (scrollY / 100)
+        document.querySelectorAll('h3, .scroll-down').forEach(el => el.style.opacity = Math.pow(p, 10))
+      }
+      addEventListener('scroll', e => {
+        y = scrollY
+        requestAnimationFrame(scroll_fn)
+        if (scrollY < 950) document.querySelector('style').innerText = document.querySelector('style').innerText.replace(/background-position-y: [^;]*;/, `background-position-y: ${-1545}px;`)
+        if (scrollY > 950) document.querySelector('style').innerText = document.querySelector('style').innerText.replace(/background-position-y: [^;]*;/, `background-position-y: ${-1245}px;`)
+        if (scrollY > 6000) document.querySelector('style').innerText = document.querySelector('style').innerText.replace(/background-position-y: [^;]*;/, `background-position-y: ${-1865}px;`)
       })
+      scroll_fn()
     </script>
-    <svg class="svg-race" style="display: none" xmlns="http://www.w3.org/2000/svg">
-      <symbol id="protoss" viewBox="0 0 24 24">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 600 710">
-          <path
-            d="M191.806 319.695l-.258-299.68c24.714 143.954 101.05 167.014 104.013 198.756-38.95-36.214-68.995 13.306-39.133 68.999 29.92 55.8 90.694 26.208 54.323-48.917 39.5 5.747 67.802 59.051 63.592 96.804-6.015-16.598-31.028-13.186-29.608 11.843 1.421 25.029 31.614 23.131 44.798 21.111 13.184-2.02 25.448-12.148 40.3-32.937 17.798-24.912 31.004-83.49-10.692-142.906 102.284 77.117 52.245 190.277 45.312 217.037l-88.05-.258-10.299 17.25 91.655-.258-6.436 14.16h-91.398l-10.298 16.22 92.427.258c-31.389 60.138-95.134 113.57-155.246 142.889 30.997-32.192 41.443-91.671 5.921-102.468-35.522-10.798-106.683 64.796-97.576 171.981-45.404-49.31-58.52-168.96-1.803-240.208 17.04 17.172 47.417 27.087 63.335 8.754s11.218-55.005.515-77.237c-10.703-22.233-36.633-44.603-65.394-41.193z"
-          />
-          <path d="M250.249 385.604a29.093 28.063 0 1 1-58.186 0 29.093 28.063 0 1 1 58.186 0z" />
-        </svg>
-      </symbol>
-      <symbol id="terran" viewBox="0 0 24 24">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 600 600">
-          <path
-            d="M299.884 102.384l-12.364 23.728-32.244.024 44.406-86.667 44.358 86.466-32.47.225-11.686-23.776zM340.656 153.813c4.899 2.505 14.026 6.644 21.719 12.53 7.117 5.446 10.744 10.323 15.344 15.47 4.6 5.146 8.212 10.936 9.781 14.78 1.57 3.846 3.143 11.432-1.938 11.407-5.08-.025-10.969-17.638-28.843-14.313 6.224 3.16 13.703 10.655 13.344 19.157-2.725-3.519-8.302-5.561-14.5-3.875 7.632 4.578 10.093 24.191-1.032 26.875-11.36 2.74-18.45-5.256-23.812-13.5-5.363-8.245-.697-28.684-13.719-36.094s-38.627-4.983-46.719 8.531c-13.724.308-25.417 12.895-15.344 30.25 5.245-16.63 17.893-7.833 17.157.094-.737 7.927-9.97 15.683-24.344 11.75-14.375-3.933-10.132-23.297-2.5-27.875-6.198-1.686-11.806.356-14.531 3.875-.36-8.502 7.15-15.997 13.375-19.156-17.875-3.326-23.763 14.287-28.844 14.312-5.08.026-3.507-7.561-1.938-11.406 1.57-3.845 5.182-9.635 9.782-14.781 4.6-5.147 8.227-10.023 15.344-15.469 7.693-5.887 16.82-10.026 21.718-12.531H107.812L84.406 209.78c29.216-21.215 62.559-20.053 63.875 8.5 1.317 28.553-19.532 32.262-39.875 31.75l.188 74.906c10.672-21.822 22.218-37.984 34.656-45.75 12.238-7.64 22.449-9.923 30.969-5.343s13.035 26.418-15.688 57.312l35.625 30c5.77-23.849 14.404-36.12 23.5-42.562 7.08-5.014 12.574-6.705 18.094-3.719 5.52 2.986 6.198 12.418 2.656 21.312-3.74 9.395-14.844 26.125-14.844 26.125 5.83 0 6.18 12.658-12.593 14.313-18.773 1.655-29.703 3.828-35.219 16.656-5.486 12.76-4.36 27.043 9.875 34.844-2.328-15.558 8.087-29.355 17.625-30 9.538-.645 11.86 4.8 13.094 9.219 1.188 4.252-1.291 9.71-5.938 13.031 15.864 2.575 18.224-6.94 18.188-15.688-.036-8.747 5.098-4.328 4.062-.375 3.854-3.825 9.185-8.757 15.094-14.125L177.687 545.22c43.958-31.502 72.172-19.359 96-14.5l26.532-59.625.375-.031 26.5 59.625c23.829-4.859 52.074-17.002 96.031 14.5l-70.094-155.032c5.91 5.367 11.272 10.3 15.125 14.125-1.036-3.953 4.099-8.372 4.063.375-.036 8.748 2.324 18.262 18.187 15.688-4.646-3.322-7.125-8.78-5.937-13.031 1.234-4.418 3.555-9.864 13.094-9.22 9.538.646 19.952 14.443 17.625 30 14.234-7.8 15.361-22.084 9.875-34.843-5.517-12.828-16.478-15.001-35.25-16.656-18.773-1.655-18.392-14.313-12.563-14.313 0 0-11.103-16.73-14.844-26.125-3.541-8.894-2.894-18.326 2.625-21.312 5.52-2.986 11.046-1.295 18.125 3.719 9.096 6.441 17.73 18.713 23.5 42.562l35.625-30c-28.723-30.894-24.207-52.732-15.687-57.313 8.52-4.58 18.7-2.297 30.937 5.344 12.438 7.766 24.016 23.928 34.688 45.75l.187-74.906c-20.343.512-41.191-3.197-39.875-31.75 1.317-28.553 34.66-29.715 63.875-8.5L493 153.812H340.656z"
-          />
-          <path d="M41.035 541.157l92.111-176.754 24.728 14.412L89.038 512.51h62.166l-12.614 27.873-97.555.774zM557.17 540.877l-92.112-176.754-24.727 14.412 68.835 133.695H447l12.614 27.873 97.555.774z" />
-        </svg>
-      </symbol>
-      <symbol id="zerg" viewBox="0 0 24 24">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 744 1052">
-          <path
-            d="M413.86 66.735c32.865 15.71 83.407 52.783 101.43 81.3 18.023 28.519 20.702 56.1 20.702 56.1s-31.119-6.658-44.843 5.441c-13.724 12.1-15.257 43.072-.723 57.064 14.535 13.993 45.201 11.488 56.015-.984 10.815-12.472 20.77-25.44 28.679-58.066 7.909-32.628.635-61.954-10.992-90.63 6.14 1.317 13.972 7.2 24.716 21.285 10.745 14.086 29.255 47.855 37.2 70.247 7.946 22.393 12.641 43.25 11.919 69.164-.722 25.914-3.425 28.663-3.425 28.663s-17.703-9.367-28.9-8.438c-11.66.967-29.267 4.667-34.31 27.268-5.044 22.601 13.102 38.72 34.077 39.135 20.974.415 41.422-25.512 51.88-42.024 10.459-16.512 18.025-60.46 18.781-69.525 7.046 11.627 11.377 44.785 10.113 78.915-1.264 34.13-4.515 49.209-11.558 69.886-7.042 20.677-9.307 17.467-9.307 17.467s-18.119-9.224-29.547-8.198c-11.428 1.025-27.616 10.618-28.452 24.865-.836 14.246 6.647 36.352 39.497 32.862 32.849-3.49 58.838-51.59 77.265-89.523 0 0-.007 38.808-14.245 84.935s-38.068 95.104-81.227 148.196c-33.408 41.173-98.284 92.684-106.757 101.187-11.983-4.221-84.423-24.935-127.311-47.237-42.889-22.302-57.972-33.875-83.971-62.12-26-28.245-37.314-54.595-37.742-97.515-.429-42.92 13.543-74.85 44.089-98.159 30.545-23.308 82.19-27.277 105.328 2.578 23.138 29.855 17.712 60.25 10.733 75.278-6.978 15.028-28.455 30.751-28.455 30.751 11.491-26.519 6.402-63.058-34.541-59.386-40.944 3.671-44.824 45.364-34.623 71.977 10.146 26.47 75.187 57.87 125.275 16.87 50.089-41 52.314-105.229 27.63-153.677-24.685-48.448-74.393-78.962-126.048-69.524-51.654 9.438-106.835 53.048-125.505 92.097-18.67 39.05-26.726 56.162-24.198 105.46 2.528 49.3 42.076 126.048 81.443 159.998 39.367 33.95 60.704 53.969 98.807 69.589 38.103 15.62 40.784 14.743 40.784 14.743-44.95 56.579-133.942 73.623-163.388 73.99-29.447.365-53.982-.703-82.86-8.404-29.256-7.804-47.616-16.372-64.11-31.072-16.493-14.699-26.66-36.501-26.66-36.501s18.292 20.58 39.597 29.386c21.306 8.806 54.73 18.053 89.389 2.036 34.658-16.017 50.234-62.749 12.767-98.137-18.552-14.164-39.142-18.823-60.15-10.187-21.007 8.634-32.028 38.586-11.863 68.875-7.285-4.372-8.485-3.972-21.836-19.782-13.544-16.794-26.365-46.681-26.365-65.19 0-18.51 3.685-22.731 3.685-22.731s33.959 23.11 49.305-9.98c15.345-33.089-22.742-53.518-40.71-48.733-17.969 4.786-24.276 15.473-33.77 34.466-9.496 18.993-13.508 43.985-13.26 67.875-3.767-6.58-6.513-15.39-10.576-31.913-4.064-16.524-4.845-30.87-5.345-44.514-.5-13.643-.215-20.843 1.921-43.897s5.099-23.712 5.099-23.712c13.23 13.027 28.415 10.231 42.153 6.714 13.737-3.517 24.882-17.644 23.607-34.619-1.276-16.974-12.397-32.381-43.057-31.527-30.66.856-53.675 40.692-65.552 70.428-1.958-7.459-1.353-44.8 9.392-74.686 10.745-29.887 32.505-59.435 39.057-64.261 1.548 5.703.967 5.161 9.725 14.913 8.758 9.751 28.625 14.47 41.38 7.764 12.755-6.707 24.675-26.363 17.18-40.99-7.493-14.627-21.439-26.767-41.922-26.42-20.484.347-47.22 13.437-66.632 33.482-19.413 20.045-23.71 25.054-23.71 25.054s8.812-41.78 28.891-67.844c20.08-26.063 38.323-43.922 58.82-54.125 20.496-10.203 38.313-14.274 38.313-14.274s-10.117 35.194 4.719 43.423c14.835 8.23 27.218 7.492 42.026.72 14.808-6.772 17.642-29.216 9.903-46.256-7.74-17.04-36.4-25.794-61.68-31.031-25.283-5.237-44.966-3.431-66.636 1.263-21.67 4.696-22.396 7.566-22.396 7.566s25.08-28.48 61.678-46.722c37.303-18.594 53.486-19.48 86.532-19.66 33.047-.181 45.229 6.78 45.229 6.78 0 .671-5.72 8.004-9.514 18.834-3.792 10.831-1.641 23.63 13.818 34.463 15.46 10.833 46.953 2.838 52.963-17.076 6.01-19.913-.421-43.315-10.83-65.6-13.228-25.258-39.924-38.05-58.084-44.914-18.16-6.863-36.857-8.522-57.836-11.477 0 0 61.481-12.965 103.29-8.44 41.809 4.527 56.225 8.69 79.33 22.776 23.107 14.087 31.404 28.768 31.404 28.768s-13.538-1.431-28.307 7.818c-14.768 9.249-18.683 34.077-6.961 48.494 11.722 14.418 45.023 18.794 70.196-12.715 25.173-31.509 21.558-90.046-1.383-116.545-22.94-26.499-36.192-38.878-45.266-45.337 0 0 6.74-.643 39.606 15.068z"
-          />
-        </svg>
-      </symbol>
-    </svg>
   </body>
 </html>
