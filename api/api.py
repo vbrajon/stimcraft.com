@@ -7,7 +7,10 @@ from urllib.request import urlopen
 class Encoder(json.JSONEncoder):
   def default(self, obj):
     if isinstance(obj, bytes):
-      return obj.decode('utf-8')
+      try:
+        return obj.decode('utf-8')
+      except:
+        return ''
     return json.JSONEncoder.default(self, obj)
 
 class handler(BaseHTTPRequestHandler):

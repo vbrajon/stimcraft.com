@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <title>Stimcraft</title>
     <link href="/img/icon.png" rel="icon" />
+    <link href="/css/sc2-fonts.css" rel="stylesheet" />
     <style>
-      @import url(/css/sc2-fonts.css);
       * { box-sizing: border-box; }
       body { margin: 0;color: white;background: black;font: 400 18px Blizzard;letter-spacing: -0.04em; }
       h1, h2, h3 { text-align: center; }
@@ -44,12 +44,28 @@
       ::-webkit-scrollbar { width: 25px;background: url(/img/scroll.png);background-position-y: -1545px;background-position-x: right; }
       ::-webkit-scrollbar-thumb { background: rgb(255, 255, 255, .25); }
 
+      img { max-width: 100%;max-height: 100%; }
+      svg { width: 1.5em;height: 1.5em; }
       .row, .column { display: flex; }
       .column { flex-direction: column; }
       .row > *, .column > * { flex: 1; }
-      .mini-map img { max-width: 100%;max-height: 100%;padding: 20px; }
+      [tt] { position: relative;overflow: visible; }
+      [tt]:after { z-index: 1;position: absolute;top: 0;left: 50%;pointer-events: none;opacity: 0;padding: 0 8px;font-size: 80%;text-transform: none;letter-spacing: 0;line-height: 2.5;white-space: nowrap;color: white;background: black;border-radius: 3px;transition: var(--transition);content: attr(tt);transform: translate(-50%, -95%); }
+      [tt]:hover:after { opacity: .9;transform: translate(-50%, calc(-100% - 5px)); }
+      a[tt=""]:after { content: attr(href); }
+
+      :root { --player: 85, 68, 68;--mineral: #00d3f3;--gold: #ffd700;--gaz: #00fc00;--worker: #f6f000;--army: #fe8100; }
       .player-1 { --player: 238, 0, 0; }
       .player-2 { --player: 14, 52, 255; }
+
+      .map { margin: 20px; }
+      .map img { border-radius: 4px; }
+      .map .fow { pointer-events: none;position: absolute;width: 100%;height: 100%;background: rgb(0,0,0,.4); }
+      .map .point { position: absolute;width: .75%;height: .75%;background: rgb(var(--player)); }
+      .map .point[class*=mineral i] { background: var(--mineral); }
+      .map .point[class*=rich i] { background: var(--gold); }
+      .map .point[class*=vespene i] { background: var(--gaz); }
+
       .panel { max-height: fit-content;margin: 10px;padding-bottom: 8px;background: rgb(255,255,255,.1);border: 1px solid rgb(255,255,255,.3);border-radius: 4px;font: 400 18px/1.6 Eurostile;letter-spacing: -.06em;}
       .panel .title { margin-bottom: -20px;font-weight: 600;text-align: center;text-transform: uppercase; }
       .panel .player { position: relative;margin: 20px;padding: 10px 10px 10px 22px;background: #111518; }
@@ -60,9 +76,15 @@
       .panel .cell:empty { background: #14181b;border-color: #14181b; }
       .panel .num { position: absolute;top: 20px;right: 0; }
       .panel .resources { display: flex; }
-      .panel .mineral, .panel .gaz { width: 110px;padding: 4px;font-weight: 300; }
-      .panel .mineral { color: #00d6fa; }
-      .panel .gaz { color: #00ff00; }
+      .panel .text { display: flex;min-width: 150px;padding: 4px;font-weight: 300; }
+      .panel .text div { margin-left: 4px;font-size: 70%;opacity: .5; }
+      .panel .mineral { color: var(--mineral); }
+      .panel .gaz { color: var(--gaz); }
+      .panel .worker { min-width: 75px;color: var(--worker); }
+      .panel .army { min-width: 75px;color: var(--army); }
+
+      /* HACK */.mini-map { max-width: 502px;min-width: 502px;max-height: 530px;min-height: 530px; }
+      /* HACK */.map { width: 500px;height: 500px;margin: 20px 0 -17px 0; }
     </style>
   </head>
   <body>
@@ -77,11 +99,13 @@
     </div>
     <img src="/img/bg.jpg" />
     <script>
+      // if (!location.hash) location.hash = 'st-41508' // WCS 2018 Winter - Stats vs Serral - Game 1
+      if (!location.hash) location.hash = 'st-47941' // WCS 2019 Spring - Special vs Serral - Game 1
       scroll_fn = () => {
-        if (window.vm) {
+        if (window.vm && vm.match) {
           if (scrollY < 950) document.querySelector('main').style.opacity = 0
           if (scrollY > 950) document.querySelector('main').style.opacity = 1
-          vm.loop = vm.match.duration * window.scrollY / (document.documentElement.offsetHeight - window.innerHeight)
+          vm.loop = Math.round(vm.match.duration * (window.scrollY - window.innerHeight) / (document.documentElement.offsetHeight - window.innerHeight - window.innerHeight))
         }
         if (scrollY < 950) document.querySelector('style').innerText = document.querySelector('style').innerText.replace(/background-position-y: [^;]*;/, `background-position-y: ${-1545}px;`)
         if (scrollY > 950) document.querySelector('style').innerText = document.querySelector('style').innerText.replace(/background-position-y: [^;]*;/, `background-position-y: ${-1245}px;`)
@@ -100,53 +124,65 @@
       scroll_fn()
     </script>
     <main style="opacity: 0">
-      <div class="info panel" v-if="match">
+      <div class="info panel" v-if="match && loop > 0">
         <div class="title">Info</div>
         <div style="display: flex;margin: 20px;padding: 20px;background: #111518;">
-          <span style="flex: 1;">{{ match.players.map(p => p.name).join(' vs ') }} <span>({{ match.game_matchup }})</span></span>
+          <span style="display: flex;flex: 1;">
+            <svg :style="{ fill: match.players[0].color }"><use :xlink:href="'#' + { P: 'protoss', T: 'terran', Z: 'zerg' }[match.players[0].race]" /></svg>
+            {{ match.players.map(p => p.name).join(' vs ') }}
+            <svg :style="{ fill: match.players[1].color }"><use :xlink:href="'#' + { P: 'protoss', T: 'terran', Z: 'zerg' }[match.players[1].race]" /></svg>
+          </span>
           <span style="flex: 1;text-align: center;">{{ loop.duration() }}/{{ match.duration.duration() }}</span>
-          <span style="flex: 1;text-align: right;">{{ new Date(match.date).relative() }}</span>
-          <!-- <span>{{ match.game_type }}</span>
-          <span>{{ match.map }}</span>
-          <span>{{ match.release[0] == 1 ? 'WoL' : match.release[0] == 2 ? 'HotS' : 'LotV' }}</span>
+          <span style="flex: 1;text-align: right;">{{ new Date(match.date).format() }}</span>
+          <!--
+          <span>{{ { 1: 'WoL', 2: 'HotS' }[match.release[0]] || 'LotV' }}</span>
           <span>{{ match.region }}/{{ match.realm }}/{{ match.release }}</span>
           <a target="_blank" rel="noopener" :href="'http://ggtracker.com/matches/' + path.slice(4)" v-if="/gg-/.test(path)">on GGTracker</a>
           <a target="_blank" rel="noopener" :href="'http://sc2replaystats.com/replay/' + path.slice(4)" v-if="/sr-/.test(path)">on SC2ReplayStats</a>
-          <a target="_blank" rel="noopener" :href="'http://spawningtool.com/' + path.slice(4)" v-if="/st-/.test(path)">on Spawningtool</a> -->
+          <a target="_blank" rel="noopener" :href="'http://spawningtool.com/' + path.slice(4)" v-if="/st-/.test(path)">on Spawningtool</a>
+          -->
         </div>
       </div>
-      <div class="row">
-        <div class="mini-map panel" v-if="match">
+      <div class="row" v-if="match && loop > 0">
+        <div class="mini-map panel" :tt="match.map">
           <div class="title">Map</div>
-          <img :src="'/maps/' + match.map.join('-') + '.jpg'" :alt="match.map" />
+          <div class="map">
+            <!-- <div class="fow"></div> -->
+            <div class="point" :class="['player-' + e.m_controlPlayerId, e.m_unitTypeName.join('-')]" :style="{ left: e.m_x / w * 100 + '%', bottom: e.m_y / h * 100 + '%' }" :tt="e.m_unitTypeName.join(' ')" v-for="e in u"></div>
+            <img :src="'/maps/' + match.map.join('-') + '.jpg'" :alt="match.map" />
+          </div>
         </div>
-        <div class="build-order panel" v-if="match">
+        <div class="build-order panel">
           <div class="title">Units</div>
           <div class="player" :class="'player-' + p._id" v-for="p in match.players">
             <div class="color"></div>
             <div class="units cells">
-              <div class="cell" v-for="v, k in p.build.units.filter(u => u.unit.first().s <= loop).group('type')">
+              <div class="cell" :tt="k.join('title')" v-for="v, k in p.build.units.filter(u => u.unit.first().s <= loop).group('type')">
                 <img class="unit" :src="'/units/' + k + '.jpg'" :alt="k" />
                 <div class="num">{{ v.length }}</div>
               </div>
               <div class="cell" v-for="i in 12 - p.build.units.filter(u => u.unit.first().s <= loop).group('type').keys().length"></div>
             </div>
             <div class="buildings cells">
-              <div class="cell" v-for="v, k in p.build.buildings.filter(u => u.unit.first().s <= loop).group('type')">
+              <div class="cell" :tt="k.join('title')" v-for="v, k in p.build.buildings.filter(u => u.unit.first().s <= loop).group('type')">
                 <img class="building" :src="'/buildings/' + k + '.jpg'" :alt="k" />
                 <div class="num">{{ v.length }}</div>
               </div>
               <div class="cell" v-for="i in 12 - p.build.buildings.filter(u => u.unit.first().s <= loop).group('type').keys().length"></div>
             </div>
             <div class="upgrades cells">
-              <div class="cell" v-for="u in p.build.upgrades.filter(u => u.s <= loop)">
+              <div class="cell" :tt="u.type.join('title')" v-for="u in p.build.upgrades.filter(u => u.s <= loop)">
                 <img class="upgrade" :src="'/upgrades/' + u.type + '.jpg'" :alt="u.type" />
               </div>
               <div class="cell" v-for="i in 12 - p.build.upgrades.filter(u => u.s <= loop).length"></div>
             </div>
             <div class="resources">
-              <div class="mineral">{{ p.build.stats.filter(s => s.s <= loop).last().filter((v, k) => k.includes('MineralsUsed')).values().sum() }}</div>
-              <div class="gaz">{{ p.build.stats.filter(s => s.s <= loop).last().filter((v, k) => k.includes('VespeneUsed')).values().sum() }}</div>
+              <!-- <div class="mineral text">{{ p.build.stats.filter(s => s.s <= loop).last().filter((v, k) => k.includes('MineralsUsed')).values().sum() }}</div>
+              <div class="gaz text">{{ p.build.stats.filter(s => s.s <= loop).last().filter((v, k) => k.includes('VespeneUsed')).values().sum() }}</div> -->
+              <div class="mineral text">{{ p.build.stats.filter(s => s.s <= loop).last().m_scoreValueMineralsCurrent }}<div>+{{ p.build.stats.filter(s => s.s <= loop).last().m_scoreValueMineralsCollectionRate }}</div></div>
+              <div class="gaz text">{{ p.build.stats.filter(s => s.s <= loop).last().m_scoreValueVespeneCurrent }}<div>+{{ p.build.stats.filter(s => s.s <= loop).last().m_scoreValueVespeneCollectionRate }}</div></div>
+              <div class="worker text">{{ p.build.units.filter(u => u.unit.first().s <= loop).group('type').filter((v, k) => ['probe', 'scv', 'drone'].includes(k)).values().flat().length }}</div>
+              <div class="army text">{{ p.build.units.filter(u => u.unit.first().s <= loop).group('type').filter((v, k) => !['probe', 'scv', 'drone'].includes(k)).values().flat().length }}</div>
             </div>
           </div>
         </div>
@@ -159,6 +195,7 @@
       // Vue.config.devtools = false
       Array.first = arr => arr[0]
       Array.last = arr => arr.slice(-1)[0]
+      Array.chunk = (arr, n) => Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n))
       Number.duration = num => {
         const s = ~~(num % 60)
         const m = ~~(num / 60 % 60)
@@ -177,8 +214,112 @@
       raw()
       raw(Object, 'keys')
       raw(Object, 'values')
+      /* TMP */ window.raw = raw
       /* TMP */ addEventListener('keydown', e => (document.body.className = e.key))
 
+      window.vm = new Vue({
+        el: 'main',
+        data: { raw: null, loop: 0 },
+        computed: {
+          w() {
+            return this.raw.initdata.m_syncLobbyState.m_gameDescription.m_mapSizeX
+          },
+          h() {
+            return this.raw.initdata.m_syncLobbyState.m_gameDescription.m_mapSizeY
+          },
+          u() {
+            if (!this.raw) return
+            const u = t.filter('m_unitTagRecycle').group(e => ((e.id = e.m_unitTagRecycle + '_' + e.m_unitTagIndex), e.id))
+            return u.values().map(0).slice(0, 100)
+            return t.reduce((acc, e) => {
+              if (e.m_unitTagRecycle) e.id = e.m_unitTagRecycle + '_' + e.m_unitTagIndex
+              if (e.m_items) e.m_items.chunk(3).map(([recycle, x, y]) => {
+                const id = recycle + '_' + e.m_firstUnitIndex
+                acc[id] = (acc[id] || []).concat({ id, s: e.s, x, y })
+              })
+              if (e.id) acc[e.id] = (acc[e.id] || []).concat(e)
+              return acc
+            }, {})
+          },
+          match() {
+            if (!this.raw) return
+            window.r = this.raw
+            window.h = r.header
+            window.d = r.details
+            window.i = r.initdata
+            window.g = r.gameevents
+            window.m = r.messageevents
+            window.t = r.trackerevents
+            m.map(e => (e.s = ~~(e._gameloop / 22.4), e._event = e._event.replace('NNet.Game.', '')))
+            t.map(e => (e.s = ~~(e._gameloop / 22.4), e._event = e._event.replace('NNet.Replay.Tracker.', '')))
+            const duration = Math.ceil(t.slice(-1)[0]._gameloop / 22.4)
+            const date = new Date((d.m_timeUTC - 116444735995904000) / 1e4 - duration)
+            const teams = d.m_playerList.group('m_teamId').values()
+            const game_options = i.m_syncLobbyState.m_gameDescription.m_gameOptions
+            const game_format = teams.map('length').join('v')
+            const game_matchup = teams.map(t => t.map('m_race').join('-').slice(0, 1)).join('v')
+            const game_type = ['Custom', 'Unranked', 'Ranked'][game_options.m_amm + game_options.m_competitive]
+            const u = t.filter('m_unitTagRecycle').group(e => ((e.id = e.m_unitTagRecycle + '_' + e.m_unitTagIndex), e.id))
+            const builds = t.reduce((acc, e) => {
+              const player = e.m_playerId || e.m_controlPlayerId
+              if (!player) return acc
+              if (!acc[player]) acc[player] = { units: [], buildings: [], upgrades: [], stats: [] }
+              if (e._event === 'SPlayerStatsEvent') acc[player].stats.push({ ...e.m_stats, s: e.s })
+              if (e.m_unitTypeName || e.m_upgradeTypeName) {
+                const unit = u[e.id]
+                const type = (e.m_unitTypeName || e.m_upgradeTypeName).join('-')
+                  .replace(/-mp$/, '')
+                  .replace('zerglingmovementspeed', 'metabolic-boost')
+                  .replace('centrifical-hooks', 'centrifugal-hooks')
+                  .replace(/^(protoss|terran|zerg)-/, '')
+                  .replace(/-(research|tech)$/, '')
+                  .replace(/level(\d)$/, '$1')
+                if (units.includes(type)) acc[player].units.push({ type, unit })
+                if (buildings.includes(type)) acc[player].buildings.push({ type, unit })
+                if (upgrades.includes(type)) acc[player].upgrades.push({ type, s: e.s })
+              }
+              return acc
+            }, {})
+            const players = d.m_playerList.map(p => {
+              const slot = i.m_syncLobbyState.m_lobbyState.m_slots.find(s => s.m_workingSetSlotId === p.m_workingSetSlotId)
+              const data = i.m_syncLobbyState.m_userInitialData[slot.m_userId]
+              const _id = t.find(e => e.m_userId === slot.m_userId && e._event === 'SPlayerSetupEvent').m_playerId
+              const color = '#' + ['m_r', 'm_g', 'm_b'].map(k => p.m_color[k].toString(16).padStart(2, '0')).join('')
+              return {
+                _id,
+                build: builds[_id],
+                clan: data.m_clanTag,
+                color: color,
+                name: data.m_name,
+                race_pref: ['T', 'Z', 'P'][slot.m_racePref.m_race],
+                race: p.m_race[0],
+                winner: p.m_result === 1,
+              }
+            })
+
+            return {
+              date,
+              duration,
+              game_format,
+              game_matchup,
+              game_type,
+              map: d.m_title,
+              players,
+              realm: d.m_playerList[0].m_toon.m_realm,
+              region: d.m_playerList[0].m_toon.m_region,
+              release: ['m_major', 'm_minor', 'm_revision', 'm_build'].map(k => h.m_version[k]).join('.'),
+            }
+          },
+        },
+        mounted() {
+          const download = () => fetch('https://stimcraft.v-brajon.now.sh/api/' + location.hash.slice(1))
+            .then(r => r.json())
+            .then(json => (this.raw = Object.freeze(json)))
+            .then(scroll_fn)
+          addEventListener('hashchange', download)
+          download()
+        },
+      })
       window.units = [
         'scv',
         'marine',
@@ -380,88 +521,6 @@
         'warp-gate',
         'yamato-cannon',
       ]
-      window.vm = new Vue({
-        el: 'main',
-        data: { raw: null, loop: 0 },
-        computed: {
-          match() {
-            if (!this.raw) return
-            window.r = this.raw
-            window.h = r.header
-            window.d = r.details
-            window.i = r.initdata
-            window.g = r.gameevents
-            window.m = r.messageevents
-            window.t = r.trackerevents
-            m.map(e => (e.s = ~~(e._gameloop / 22.4), e._event = e._event.replace('NNet.Game.', '')))
-            t.map(e => (e.s = ~~(e._gameloop / 22.4), e._event = e._event.replace('NNet.Replay.Tracker.', '')))
-            const duration = Math.ceil(t.slice(-1)[0]._gameloop / 22.4)
-            const date = new Date((d.m_timeUTC - 116444735995904000) / 1e4 - duration)
-            const teams = d.m_playerList.group('m_teamId').values()
-            const game_options = i.m_syncLobbyState.m_gameDescription.m_gameOptions
-            const game_format = teams.map('length').join('v')
-            const game_matchup = teams.map(t => t.map('m_race').join('-').slice(0, 1)).join('v')
-            const game_type = ['Custom', 'Unranked', 'Ranked'][game_options.m_amm + game_options.m_competitive]
-            const u = t.filter('m_unitTagRecycle').group(e => ((e.id = e.m_unitTagRecycle + '_' + e.m_unitTagIndex), e.id))
-            const builds = t.reduce((acc, e) => {
-              const player = e.m_playerId || e.m_controlPlayerId
-              if (!player) return acc
-              if (!acc[player]) acc[player] = { units: [], buildings: [], upgrades: [], stats: [] }
-              if (e._event === 'SPlayerStatsEvent') acc[player].stats.push({ ...e.m_stats, s: e.s })
-              if (e.m_unitTypeName || e.m_upgradeTypeName) {
-                const unit = u[e.id]
-                const type = (e.m_unitTypeName || e.m_upgradeTypeName).join('-')
-                  .replace('zerglingmovementspeed', 'metabolic-boost')
-                  .replace('centrifical-hooks', 'centrifugal-hooks')
-                  .replace(/^(protoss|terran|zerg)-/, '')
-                  .replace(/-(research|tech)$/, '')
-                  .replace(/level(\d)$/, '$1')
-                if (units.includes(type)) acc[player].units.push({ type, unit })
-                if (buildings.includes(type)) acc[player].buildings.push({ type, unit })
-                if (upgrades.includes(type)) acc[player].upgrades.push({ type, s: e.s })
-                else if (!e.id) console.log(type)
-              }
-              return acc
-            }, {})
-            const players = d.m_playerList.map(p => {
-              const slot = i.m_syncLobbyState.m_lobbyState.m_slots.find(s => s.m_workingSetSlotId === p.m_workingSetSlotId)
-              const data = i.m_syncLobbyState.m_userInitialData[slot.m_userId]
-              const _id = t.find(e => e.m_userId === slot.m_userId && e._event === 'SPlayerSetupEvent').m_playerId
-              const color = '#' + ['m_r', 'm_g', 'm_b'].map(k => p.m_color[k].toString(16).padStart(2, '0')).join('')
-              return {
-                _id,
-                build: builds[_id],
-                clan: data.m_clanTag,
-                color: color,
-                name: data.m_name,
-                race_pref: ['T', 'Z', 'P'][slot.m_racePref.m_race],
-                race: p.m_race[0],
-                winner: p.m_result === 1,
-              }
-            })
-
-            return {
-              date,
-              duration,
-              game_format,
-              game_matchup,
-              game_type,
-              map: d.m_title,
-              players,
-              realm: d.m_playerList[0].m_toon.m_realm,
-              region: d.m_playerList[0].m_toon.m_region,
-              release: ['m_major', 'm_minor', 'm_revision', 'm_build'].map(k => h.m_version[k]).join('.'),
-            }
-          },
-        },
-        mounted() {
-          // WCS 2018 - Stats vs Serral Game1 - st-41508
-          fetch('https://stimcraft.v-brajon.now.sh/api/st-41508')
-            .then(r => r.json())
-            .then(json => (this.raw = Object.freeze(json)))
-            .then(scroll_fn)
-        },
-      })
     </script>
     <svg class="svg-race" style="display: none" xmlns="http://www.w3.org/2000/svg">
       <symbol id="protoss" viewBox="0 0 24 24">

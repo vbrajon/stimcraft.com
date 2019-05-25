@@ -4,21 +4,22 @@
   "builds": [
     {
       "src": "/api/api.py",
-      "use": "@now/python"
+      "use": "@now/python",
+      "config": { "maxLambdaSize": "50mb" }
     },
     {
-      "src": "now.sh",
-      "use": "@now/static-build",
-      "config": { "distDir": "front" }
+      "src": "/front/**",
+      "use": "@now/static"
     }
   ],
   "routes": [
     {
-      "handle": "filesystem"
-    },
-    {
       "src": "/api/.*",
       "dest": "/api/api.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/front/$1"
     }
   ]
 }
