@@ -53,26 +53,24 @@
       [tt]:after { z-index: 1;position: absolute;top: 0;left: 50%;pointer-events: none;opacity: 0;padding: 0 8px;font-size: 80%;text-transform: none;letter-spacing: 0;line-height: 2.5;white-space: nowrap;color: white;background: black;border-radius: 3px;transition: var(--transition);content: attr(tt);transform: translate(-50%, -95%); }
       [tt]:hover:after { opacity: .9;transform: translate(-50%, calc(-100% - 5px)); }
       a[tt=""]:after { content: attr(href); }
+      :root { --player: 85 68 68;--mineral: #00d3f3;--gold: #ffd700;--gaz: #00fc00;--worker: #f6f000;--army: #fe8100; }
+      .player-1 { --player: var(--player-1); }
+      .player-2 { --player: var(--player-2); }
 
-      :root { --player: 85, 68, 68;--mineral: #00d3f3;--gold: #ffd700;--gaz: #00fc00;--worker: #f6f000;--army: #fe8100; }
-      .player-1 { --player: 238, 0, 0; }
-      .player-2 { --player: 14, 52, 255; }
-
-      .map { margin: 20px; }
+      .map { margin: 20px;width: unset;height: unset;max-width: 100%;max-height: 100%; }
       .map img { border-radius: 4px; }
-      .map .fow { pointer-events: none;position: absolute;width: 100%;height: 100%;background: rgb(0,0,0,.4); }
-      .map .point { position: absolute;width: .75%;height: .75%;background: rgb(var(--player)); }
-      .map .point[class*=mineral i] { background: var(--mineral); }
-      .map .point[class*=rich i] { background: var(--gold); }
-      .map .point[class*=vespene i] { background: var(--gaz); }
+      .map .point { position: absolute;width: 1px;height: 1px;fill: rgb(var(--player)); }
+      .map .point[class*=mineral i] { fill: var(--mineral); }
+      .map .point[class*=rich i] { fill: var(--gold); }
+      .map .point[class*=vespene i] { fill: var(--gaz); }
 
-      .panel { max-height: fit-content;margin: 10px;padding-bottom: 8px;background: rgb(255,255,255,.1);border: 1px solid rgb(255,255,255,.3);border-radius: 4px;font: 400 18px/1.6 Eurostile;letter-spacing: -.06em;}
+      .panel { max-height: fit-content;margin: 10px;padding-bottom: 8px;background: rgb(255 255 255 / .1);border: 1px solid rgb(255,255,255,.3);border-radius: 4px;font: 400 18px/1.6 Eurostile;letter-spacing: -.06em;}
       .panel .title { margin-bottom: -20px;font-weight: 600;text-align: center;text-transform: uppercase; }
       .panel .player { position: relative;margin: 20px;padding: 10px 10px 10px 22px;background: #111518; }
       .panel .color { position: absolute;top: 8px;left: 8px;height: calc(100% - 16px);width: 8px;background: rgb(var(--player));border-radius: 4px; }
       .panel .cells { display: flex; }
       .panel .cells img { position: absolute;width: 100%; }
-      .panel .cell { position: relative;width: 42px;height: 42px;margin: 2px;background: rgb(var(--player), .1);border: 2px solid rgb(var(--player), .5);border-radius: 2px; }
+      .panel .cell { position: relative;width: 42px;height: 42px;margin: 2px;background: rgb(var(--player) / .1);border: 2px solid rgb(var(--player) / .5);border-radius: 2px; }
       .panel .cell:empty { background: #14181b;border-color: #14181b; }
       .panel .num { position: absolute;top: 20px;right: 0; }
       .panel .resources { display: flex; }
@@ -84,7 +82,6 @@
       .panel .army { min-width: 75px;color: var(--army); }
 
       /* HACK */.mini-map { max-width: 502px;min-width: 502px;max-height: 530px;min-height: 530px; }
-      /* HACK */.map { width: 500px;height: 500px;margin: 20px 0 -17px 0; }
     </style>
   </head>
   <body>
@@ -122,8 +119,14 @@
         requestAnimationFrame(scroll_fn)
       })
       scroll_fn()
+      function hexToRGB(hex) {
+        const r = parseInt(hex.slice(1, 3), 16)
+        const g = parseInt(hex.slice(3, 5), 16)
+        const b = parseInt(hex.slice(5, 7), 16)
+        return [r, g, b].join(' ')
+      }
     </script>
-    <main style="opacity: 0">
+    <main style="opacity: 0" :style="match?.players.reduce((acc, p) => (acc['--player-' + p._id] = window.hexToRGB(p.color), acc), {})">
       <div class="info panel" v-if="match && loop > 0">
         <div class="title">Info</div>
         <div style="display: flex;margin: 20px;padding: 20px;background: #111518;">
@@ -133,56 +136,53 @@
             <svg :style="{ fill: match.players[1].color }"><use :xlink:href="'#' + { P: 'protoss', T: 'terran', Z: 'zerg' }[match.players[1].race]" /></svg>
           </span>
           <span style="flex: 1;text-align: center;">{{ loop.duration() }}/{{ match.duration.duration() }}</span>
-          <span style="flex: 1;text-align: right;">{{ new Date(match.date).format() }}</span>
-          <!--
-          <span>{{ { 1: 'WoL', 2: 'HotS' }[match.release[0]] || 'LotV' }}</span>
-          <span>{{ match.region }}/{{ match.realm }}/{{ match.release }}</span>
+          <span style="flex: 1;text-align: right;">{{ new Date(match.date).format('year, month, day') }}</span>
+          <!-- <span>{{ { 1: 'WoL', 2: 'HotS' }[match.release[0]] || 'LotV' }}</span>
+          <span>{{ match.region }} / {{ match.realm }} / {{ match.release }}</span> -->
           <a target="_blank" rel="noopener" :href="'http://ggtracker.com/matches/' + path.slice(4)" v-if="/gg-/.test(path)">on GGTracker</a>
           <a target="_blank" rel="noopener" :href="'http://sc2replaystats.com/replay/' + path.slice(4)" v-if="/sr-/.test(path)">on SC2ReplayStats</a>
           <a target="_blank" rel="noopener" :href="'http://spawningtool.com/' + path.slice(4)" v-if="/st-/.test(path)">on Spawningtool</a>
-          -->
         </div>
       </div>
       <div class="row" v-if="match && loop > 0">
         <div class="mini-map panel" :tt="match.map">
           <div class="title">Map</div>
-          <div class="map">
-            <!-- <div class="fow"></div> -->
-            <div class="point" :class="['player-' + e.m_controlPlayerId, e.m_unitTypeName.join('-')]" :style="{ left: e.m_x / w * 100 + '%', bottom: e.m_y / h * 100 + '%' }" :tt="e.m_unitTypeName.join(' ')" v-for="e in u"></div>
-            <img :src="'/maps/' + match.map.join('-') + '.jpg'" :alt="match.map" />
-          </div>
+          <svg class="map" :view-box.camel="Math.round(w * .09) + ' ' + Math.round(h * .09 + 5) + ' ' + Math.round(w * .82) + ' ' + Math.round(h * .82)" style="max-width: 100%;max-height: 100%;">
+            <image :href="'/maps/' + match.map.format('dash') + '.jpg'" :height="Math.round(h * .82)" :width="Math.round(w * .82)" :x="Math.round(w * .09)" :y="Math.round(h * .09 + 5)" />
+            <rect class="point" :class="['player-' + e.m_controlPlayerId, e.m_unitTypeName.format('dash')]" :x="e.m_x" :y="h - e.m_y" :tt="e.m_unitTypeName.format(' ')" v-for="e in u"></rect>
+          </svg>
         </div>
         <div class="build-order panel">
           <div class="title">Units</div>
           <div class="player" :class="'player-' + p._id" v-for="p in match.players">
             <div class="color"></div>
             <div class="units cells">
-              <div class="cell" :tt="k.join('title')" v-for="v, k in p.build.units.filter(u => u.unit.first().s <= loop).group('type')">
+              <div class="cell" :tt="k.format('title')" v-for="v, k in p.build.units.filter(u => u.unit.at(0).s <= loop && (u.unit.find(v => v._event === 'SUnitDiedEvent') || { s: Infinity }).s >= loop).group('type')">
                 <img class="unit" :src="'/units/' + k + '.jpg'" :alt="k" />
                 <div class="num">{{ v.length }}</div>
               </div>
-              <div class="cell" v-for="i in 12 - p.build.units.filter(u => u.unit.first().s <= loop).group('type').keys().length"></div>
+              <div class="cell" v-for="i in 12 - p.build.units.filter(u => u.unit.at(0).s <= loop && (u.unit.find(v => v._event === 'SUnitDiedEvent') || { s: Infinity }).s >= loop).group('type').keys().length"></div>
             </div>
             <div class="buildings cells">
-              <div class="cell" :tt="k.join('title')" v-for="v, k in p.build.buildings.filter(u => u.unit.first().s <= loop).group('type')">
+              <div class="cell" :tt="k.format('title')" v-for="v, k in p.build.buildings.filter(u => u.unit.at(0).s <= loop && (u.unit.find(v => v._event === 'SUnitDiedEvent') || { s: Infinity }).s >= loop).group('type')">
                 <img class="building" :src="'/buildings/' + k + '.jpg'" :alt="k" />
                 <div class="num">{{ v.length }}</div>
               </div>
-              <div class="cell" v-for="i in 12 - p.build.buildings.filter(u => u.unit.first().s <= loop).group('type').keys().length"></div>
+              <div class="cell" v-for="i in 12 - p.build.buildings.filter(u => u.unit.at(0).s <= loop && (u.unit.find(v => v._event === 'SUnitDiedEvent') || { s: Infinity }).s >= loop).group('type').keys().length"></div>
             </div>
             <div class="upgrades cells">
-              <div class="cell" :tt="u.type.join('title')" v-for="u in p.build.upgrades.filter(u => u.s <= loop)">
+              <div class="cell" :tt="u.type.format('title')" v-for="u in p.build.upgrades.filter(u => u.s <= loop)">
                 <img class="upgrade" :src="'/upgrades/' + u.type + '.jpg'" :alt="u.type" />
               </div>
               <div class="cell" v-for="i in 12 - p.build.upgrades.filter(u => u.s <= loop).length"></div>
             </div>
             <div class="resources">
-              <!-- <div class="mineral text">{{ p.build.stats.filter(s => s.s <= loop).last().filter((v, k) => k.includes('MineralsUsed')).values().sum() }}</div>
-              <div class="gaz text">{{ p.build.stats.filter(s => s.s <= loop).last().filter((v, k) => k.includes('VespeneUsed')).values().sum() }}</div> -->
-              <div class="mineral text">{{ p.build.stats.filter(s => s.s <= loop).last().m_scoreValueMineralsCurrent }}<div>+{{ p.build.stats.filter(s => s.s <= loop).last().m_scoreValueMineralsCollectionRate }}</div></div>
-              <div class="gaz text">{{ p.build.stats.filter(s => s.s <= loop).last().m_scoreValueVespeneCurrent }}<div>+{{ p.build.stats.filter(s => s.s <= loop).last().m_scoreValueVespeneCollectionRate }}</div></div>
-              <div class="worker text">{{ p.build.units.filter(u => u.unit.first().s <= loop).group('type').filter((v, k) => ['probe', 'scv', 'drone'].includes(k)).values().flat().length }}</div>
-              <div class="army text">{{ p.build.units.filter(u => u.unit.first().s <= loop).group('type').filter((v, k) => !['probe', 'scv', 'drone'].includes(k)).values().flat().length }}</div>
+              <!-- <div class="mineral text">{{ p.build.stats.filter(s => s.s <= loop).at(-1).filter((v, k) => k.includes('MineralsUsed')).values().sum() }}</div>
+              <div class="gaz text">{{ p.build.stats.filter(s => s.s <= loop).at(-1).filter((v, k) => k.includes('VespeneUsed')).values().sum() }}</div> -->
+              <div class="mineral text">{{ p.build.stats.filter(s => s.s <= loop).at(-1).m_scoreValueMineralsCurrent }}<div>+{{ p.build.stats.filter(s => s.s <= loop).at(-1).m_scoreValueMineralsCollectionRate }}</div></div>
+              <div class="gaz text">{{ p.build.stats.filter(s => s.s <= loop).at(-1).m_scoreValueVespeneCurrent }}<div>+{{ p.build.stats.filter(s => s.s <= loop).at(-1).m_scoreValueVespeneCollectionRate }}</div></div>
+              <div class="worker text">{{ p.build.units.filter(u => u.unit.at(0).s <= loop).group('type').filter((v, k) => ['probe', 'scv', 'drone'].includes(k)).values().flat().length }}</div>
+              <div class="army text">{{ p.build.units.filter(u => u.unit.at(0).s <= loop).group('type').filter((v, k) => !['probe', 'scv', 'drone'].includes(k)).values().flat().length }}</div>
             </div>
           </div>
         </div>
@@ -190,11 +190,9 @@
     </main>
     <script type="module">
       import Vue from 'https://unpkg.com/vue@2.6.10/dist/vue.esm.browser.js'
-      import raw from 'https://vbrajon.github.io/rawjs/raw.js'
+      import 'https://vbrajon.github.io/rawjs/raw.js'
       Vue.config.productionTip = false
       // Vue.config.devtools = false
-      Array.first = arr => arr[0]
-      Array.last = arr => arr.slice(-1)[0]
       Array.chunk = (arr, n) => Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n))
       Number.duration = num => {
         const s = ~~(num % 60)
@@ -211,16 +209,17 @@
       }
       String.duration = str => (+str).duration()
       Date.relative = (d1, d2 = new Date()) => (~~((d2 - d1) / 1000)).duration() + ' ago'
-      raw()
-      raw(Object, 'keys')
-      raw(Object, 'values')
-      /* TMP */ window.raw = raw
-      /* TMP */ addEventListener('keydown', e => (document.body.className = e.key))
+      Object.extend()
+      addEventListener('keydown', e => (document.body.className = e.key))
 
       window.vm = new Vue({
         el: 'main',
-        data: { raw: null, loop: 0 },
+        data: { window, raw: null, loop: 0 },
         computed: {
+          path() {
+            this.raw
+            return window.location.hash
+          },
           w() {
             return this.raw.initdata.m_syncLobbyState.m_gameDescription.m_mapSizeX
           },
@@ -230,16 +229,16 @@
           u() {
             if (!this.raw) return
             const u = t.filter('m_unitTagRecycle').group(e => ((e.id = e.m_unitTagRecycle + '_' + e.m_unitTagIndex), e.id))
-            return u.values().map(0).slice(0, 100)
-            return t.reduce((acc, e) => {
-              if (e.m_unitTagRecycle) e.id = e.m_unitTagRecycle + '_' + e.m_unitTagIndex
-              if (e.m_items) e.m_items.chunk(3).map(([recycle, x, y]) => {
-                const id = recycle + '_' + e.m_firstUnitIndex
-                acc[id] = (acc[id] || []).concat({ id, s: e.s, x, y })
-              })
-              if (e.id) acc[e.id] = (acc[e.id] || []).concat(e)
-              return acc
-            }, {})
+            return u.values().filter(u => u.at(0).s <= this.loop && (u.find(v => v._event === 'SUnitDiedEvent') || { s: Infinity }).s >= this.loop).map(u => Object.assign(...u.filter(e => e.s <= this.loop)))
+            // return t.reduce((acc, e) => {
+            //   if (e.m_unitTagRecycle) e.id = e.m_unitTagRecycle + '_' + e.m_unitTagIndex
+            //   if (e.m_items) e.m_items.chunk(3).map(([recycle, x, y]) => {
+            //     const id = recycle + '_' + e.m_firstUnitIndex
+            //     acc[id] = (acc[id] || []).concat({ id, s: e.s, x, y })
+            //   })
+            //   if (e.id) acc[e.id] = (acc[e.id] || []).concat(e)
+            //   return acc
+            // }, {})
           },
           match() {
             if (!this.raw) return
@@ -267,16 +266,16 @@
               if (e._event === 'SPlayerStatsEvent') acc[player].stats.push({ ...e.m_stats, s: e.s })
               if (e.m_unitTypeName || e.m_upgradeTypeName) {
                 const unit = u[e.id]
-                const type = (e.m_unitTypeName || e.m_upgradeTypeName).join('-')
+                const type = (e.m_unitTypeName || e.m_upgradeTypeName).format('dash')
                   .replace(/-mp$/, '')
                   .replace('zerglingmovementspeed', 'metabolic-boost')
                   .replace('centrifical-hooks', 'centrifugal-hooks')
                   .replace(/^(protoss|terran|zerg)-/, '')
                   .replace(/-(research|tech)$/, '')
                   .replace(/level(\d)$/, '$1')
-                if (units.includes(type)) acc[player].units.push({ type, unit })
-                if (buildings.includes(type)) acc[player].buildings.push({ type, unit })
-                if (upgrades.includes(type)) acc[player].upgrades.push({ type, s: e.s })
+                if (units.includes(type)) acc[player].units.push({ type, unit })
+                if (buildings.includes(type)) acc[player].buildings.push({ type, unit })
+                if (upgrades.includes(type)) acc[player].upgrades.push({ type, s: e.s })
               }
               return acc
             }, {})
@@ -297,7 +296,7 @@
               }
             })
 
-            return {
+            return window.match = {
               date,
               duration,
               game_format,
@@ -312,7 +311,7 @@
           },
         },
         mounted() {
-          const download = () => fetch('https://stimcraft.v-brajon.now.sh/api/' + location.hash.slice(1))
+          const download = () => fetch('https://stimcraft.com/api/' + location.hash.slice(1))
             .then(r => r.json())
             .then(json => (this.raw = Object.freeze(json)))
             .then(scroll_fn)
