@@ -4,12 +4,12 @@
   "builds": [
     {
       "src": "/api/api.py",
-      "use": "@now/python",
+      "use": "@vercel/python",
       "config": { "maxLambdaSize": "50mb" }
     },
     {
       "src": "/front/**",
-      "use": "@now/static"
+      "use": "@vercel/static"
     }
   ],
   "routes": [

@@ -1,6 +1,10 @@
 # Stimcraft
 > Stimulate your Starcraft II performances
 
+## Usage
+
+Use `vercel dev` for local development.
+
 ## UI
 ------------------------
 |         Info         |

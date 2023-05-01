@@ -43,6 +43,7 @@
       main { position: fixed;top: 0;left: 0;width: 100%;padding: 5%;transition: all .5s cubic-bezier(.4,0,.2,1); }
       ::-webkit-scrollbar { width: 25px;background: url(/img/scroll.png);background-position-y: -1545px;background-position-x: right; }
       ::-webkit-scrollbar-thumb { background: rgb(255, 255, 255, .25); }
+      .top-link { position: fixed;top: 25px;right: 75px;color: white; }
 
       img { max-width: 100%;max-height: 100%; }
       svg { width: 1.5em;height: 1.5em; }
@@ -96,6 +97,7 @@
     </div>
     <img src="/img/bg.jpg" />
     <script>
+      if (window.innerWidth < 1320) document.body.style.zoom = window.innerWidth / 1320
       // if (!location.hash) location.hash = 'st-41508' // WCS 2018 Winter - Stats vs Serral - Game 1
       if (!location.hash) location.hash = 'st-47941' // WCS 2019 Spring - Special vs Serral - Game 1
       scroll_fn = () => {
@@ -127,6 +129,9 @@
       }
     </script>
     <main style="opacity: 0" :style="match?.players.reduce((acc, p) => (acc['--player-' + p._id] = window.hexToRGB(p.color), acc), {})">
+      <a class="top-link" target="_blank" rel="noopener" :href="'http://ggtracker.com/matches/' + path.slice(4)" v-if="/gg-/.test(path)">on GGTracker</a>
+      <a class="top-link" target="_blank" rel="noopener" :href="'http://sc2replaystats.com/replay/' + path.slice(4)" v-if="/sr-/.test(path)">on SC2ReplayStats</a>
+      <a class="top-link" target="_blank" rel="noopener" :href="'http://spawningtool.com/' + path.slice(4)" v-if="/st-/.test(path)">on Spawningtool</a>
       <div class="info panel" v-if="match && loop > 0">
         <div class="title">Info</div>
         <div style="display: flex;margin: 20px;padding: 20px;background: #111518;">
@@ -139,9 +144,6 @@
           <span style="flex: 1;text-align: right;">{{ new Date(match.date).format('year, month, day') }}</span>
           <!-- <span>{{ { 1: 'WoL', 2: 'HotS' }[match.release[0]] || 'LotV' }}</span>
           <span>{{ match.region }} / {{ match.realm }} / {{ match.release }}</span> -->
-          <a target="_blank" rel="noopener" :href="'http://ggtracker.com/matches/' + path.slice(4)" v-if="/gg-/.test(path)">on GGTracker</a>
-          <a target="_blank" rel="noopener" :href="'http://sc2replaystats.com/replay/' + path.slice(4)" v-if="/sr-/.test(path)">on SC2ReplayStats</a>
-          <a target="_blank" rel="noopener" :href="'http://spawningtool.com/' + path.slice(4)" v-if="/st-/.test(path)">on Spawningtool</a>
         </div>
       </div>
       <div class="row" v-if="match && loop > 0">
@@ -193,7 +195,6 @@
       import 'https://vbrajon.github.io/rawjs/raw.js'
       Vue.config.productionTip = false
       // Vue.config.devtools = false
-      Array.chunk = (arr, n) => Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n))
       Number.duration = num => {
         const s = ~~(num % 60)
         const m = ~~(num / 60 % 60)
@@ -208,7 +209,6 @@
         return y + ' year ' + M + ' month'
       }
       String.duration = str => (+str).duration()
-      Date.relative = (d1, d2 = new Date()) => (~~((d2 - d1) / 1000)).duration() + ' ago'
       Object.extend()
       addEventListener('keydown', e => (document.body.className = e.key))
 
@@ -230,15 +230,6 @@
             if (!this.raw) return
             const u = t.filter('m_unitTagRecycle').group(e => ((e.id = e.m_unitTagRecycle + '_' + e.m_unitTagIndex), e.id))
             return u.values().filter(u => u.at(0).s <= this.loop && (u.find(v => v._event === 'SUnitDiedEvent') || { s: Infinity }).s >= this.loop).map(u => Object.assign(...u.filter(e => e.s <= this.loop)))
-            // return t.reduce((acc, e) => {
-            //   if (e.m_unitTagRecycle) e.id = e.m_unitTagRecycle + '_' + e.m_unitTagIndex
-            //   if (e.m_items) e.m_items.chunk(3).map(([recycle, x, y]) => {
-            //     const id = recycle + '_' + e.m_firstUnitIndex
-            //     acc[id] = (acc[id] || []).concat({ id, s: e.s, x, y })
-            //   })
-            //   if (e.id) acc[e.id] = (acc[e.id] || []).concat(e)
-            //   return acc
-            // }, {})
           },
           match() {
             if (!this.raw) return
@@ -311,7 +302,7 @@
           },
         },
         mounted() {
-          const download = () => fetch('https://stimcraft.com/api/' + location.hash.slice(1))
+          const download = () => fetch('/api/' + location.hash.slice(1))
             .then(r => r.json())
             .then(json => (this.raw = Object.freeze(json)))
             .then(scroll_fn)
