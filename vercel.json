@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "stimcraft",
   "builds": [
     {
       "src": "/api/api.py",

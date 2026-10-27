@@ -26,33 +26,14 @@ Use `vercel dev` for local development.
   - Micro
 
 ## API
+`GET /api/st-<id>` decodes the [Spawning Tool](https://lotv.spawningtool.com) replay `<id>` with [s2protocol](https://github.com/Blizzard/s2protocol), game events excluded:
 ```
 attributeevents
 details
-gameevents
 header
 initdata
 messageevents
 trackerevents
-```
----
-```
-date: string
-duration: number
-game_format: string
-game_matchup: string
-game_type: string
-map: string
-players:
-  clan: string
-  color: string
-  name: string
-  race: string
-  race_pref: string
-  winner: boolean
-realm: number
-region: number
-release: string
 ```
 
 ## Observer UI - WCS 3.0
